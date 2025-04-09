@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h2>Выгрузка результатов тестирования</h2>
+
+{% if error %}
+<p style="color: red;">{{ error }}</p>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    
+    <label for="school">Выберите школу:</label>
+    <select name="school" id="school">
+        <option value="">-- Выберите школу --</option>
+        {% for school in schools %}
+        <option value="{{ school.id }}">{{ school.name }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="date">Выберите дату:</label>
+    <input type="date" name="date" id="date">
+
+    <button type="submit">Скачать Excel</button>
+</form>
+
+{% endblock %}
