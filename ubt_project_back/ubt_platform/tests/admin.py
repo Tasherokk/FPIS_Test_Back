@@ -19,7 +19,6 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 
 
-
 # Кастомная форма для Answer с использованием Summernote
 class AnswerForm(forms.ModelForm):
     class Meta:
@@ -29,7 +28,6 @@ class AnswerForm(forms.ModelForm):
             'text': SummernoteWidget(),  # Используем Summernote для редактирования текста
         }
 
-    
 
 class AnswerInline(nested_admin.NestedTabularInline):
     model = Answer
@@ -37,24 +35,27 @@ class AnswerInline(nested_admin.NestedTabularInline):
     max_num = 6
     form = AnswerForm  # Применяем форму с Summernote
 
+
 class MatchingPairForm(forms.ModelForm):
     class Meta:
         model = MatchingPair
         fields = '__all__'
         widgets = {
             'left_side_1': SummernoteWidget(),
-            'left_side_2': SummernoteWidget(),# Используем Summernote для редактирования текста
+            'left_side_2': SummernoteWidget(),  # Используем Summernote для редактирования текста
             'right_option_1': SummernoteWidget(),
             'right_option_2': SummernoteWidget(),
             'right_option_3': SummernoteWidget(),
             'right_option_4': SummernoteWidget(),
         }
 
+
 class MatchingPairInline(nested_admin.NestedStackedInline):
     model = MatchingPair
     extra = 0
     max_num = 1
     form = MatchingPairForm  # Применяем форму с Summernote
+
 
 # Кастомная форма для Question с использованием Summernote
 class QuestionForm(forms.ModelForm):
@@ -65,6 +66,7 @@ class QuestionForm(forms.ModelForm):
             'text': SummernoteWidget(),  # Используем Summernote для редактирования текста
         }
 
+
 class QuestionInline(nested_admin.NestedStackedInline):
     model = Question
     extra = 0
@@ -72,23 +74,28 @@ class QuestionInline(nested_admin.NestedStackedInline):
     inlines = [AnswerInline, MatchingPairInline]
     form = QuestionForm  # Применяем форму с Summernote
 
+
 class SubjectAdmin(nested_admin.NestedModelAdmin):
     inlines = [QuestionInline]
     list_display = ['name', 'variant', 'is_active']
     list_filter = ['name', 'variant', 'is_active']
     list_editable = ['is_active']
 
+
 # Админ-класс для Question с поддержкой Summernote
 class QuestionAdmin(nested_admin.NestedModelAdmin):
     inlines = [AnswerInline, MatchingPairInline]
     form = QuestionForm
 
+
 class MatchingPairAdmin(nested_admin.NestedModelAdmin):
     form = MatchingPairForm
+
 
 class SubjectResultInline(nested_admin.NestedStackedInline):
     model = SubjectResult
     exclude = ['subject', 'score']
+
 
 class TotalScoreFilter(admin.SimpleListFilter):
     title = _('total score')  # Name for the filter in the admin interface
@@ -107,12 +114,13 @@ class TotalScoreFilter(admin.SimpleListFilter):
             return queryset.order_by('-total_score')
         return queryset
 
+
 class TestResultAdmin(nested_admin.NestedModelAdmin):
     change_list_template = "admin/change_list.html"
 
     date_hierarchy = 'date_taken'
 
-    list_display = ['user_full_name', 'user_iin', 'user_school', 'total_score',  'date_taken']
+    list_display = ['user_full_name', 'user_iin', 'user_school', 'total_score', 'date_taken']
     list_filter = [
         ('date_taken', DateFieldListFilter),
         'user__usage_type',
@@ -124,14 +132,20 @@ class TestResultAdmin(nested_admin.NestedModelAdmin):
     ordering = ['-date_taken', 'user__full_name']
     inlines = [SubjectResultInline]
     readonly_fields = ['id', 'total_score', 'date_taken', 'user']
+
     def user_full_name(self, obj):
         return obj.user.full_name
+
     user_full_name.short_description = 'ФИО'
+
     def user_iin(self, obj):
         return obj.user.iin
+
     user_iin.short_description = 'ИИН'
+
     def user_school(self, obj):
         return obj.user.school.name if obj.user.school else "—"
+
     user_school.short_description = 'Школа'
 
     SUBJECT_CODE_TO_RU = {
@@ -154,7 +168,6 @@ class TestResultAdmin(nested_admin.NestedModelAdmin):
     }
 
     DEFAULT_CODES = ['HIS', 'RL', 'ML']
-
 
     def get_urls(self):
         urls = super().get_urls()
@@ -356,10 +369,12 @@ class CustomUserCreationForm(forms.ModelForm):
             user.save()
         return user
 
+
 class CustomUserChangeForm(forms.ModelForm):
     class Meta:
         model = CustomUser
         fields = ('full_name', 'is_active', 'created_at', 'usage_type')
+
 
 class CustomUserAdmin(UserAdmin):
     form = CustomUserChangeForm
@@ -377,15 +392,18 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = (
         (None, {'fields': ('iin', 'password', 'password_link')}),
         ('Personal info', {'fields': ('full_name', 'school', 'created_at', 'usage_type')}),
-        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions',)}),
     )
 
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('iin', 'full_name', 'school', 'usage_type', 'is_active', 'is_staff', 'is_superuser'),
+            'fields': ('iin', 'full_name', 'school', 'usage_type', 'is_active', 'is_staff', 'is_superuser', 'groups',
+                       'user_permissions',),
         }),
     )
+
+    filter_horizontal = ('groups', 'user_permissions')
 
     readonly_fields = ['password', 'password_link']
 
@@ -403,13 +421,13 @@ class CustomUserAdmin(UserAdmin):
 
     deactivate_selected_users.short_description = "Деактивировать выбранных пользователей"
 
-
     def password_link(self, obj):
         """Добавляем ссылку для смены пароля."""
         if obj.id:
             url = reverse('admin:auth_user_password_change', args=[obj.id])
             return format_html('<a href="{}">{}</a>', url, _('Сменить пароль'))
         return _("Пароль ещё не задан")
+
     password_link.short_description = "Изменить пароль"
 
     def get_urls(self):
